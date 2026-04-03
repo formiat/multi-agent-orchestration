@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Task Planning"
+  short_description: "Let Claude draft PLAN.md and review it"
+  default_prompt: "Use $claude-task-planning to have local Claude create and iterate on PLAN.md for task_id=TASK-1234."

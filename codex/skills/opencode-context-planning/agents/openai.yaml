@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode Context Planning"
+  short_description: "Let OpenCode refine PLAN.md from branch context"
+  default_prompt: "Use $opencode-context-planning to have local OpenCode create or refine PLAN.md from the current branch context and a freeform prompt."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode Context Review"
+  short_description: "Let OpenCode review a local target and refine findings"
+  default_prompt: "Use $opencode-context-review to have local OpenCode review a branch, commit, MR, diff, or other local target described by review_hint."

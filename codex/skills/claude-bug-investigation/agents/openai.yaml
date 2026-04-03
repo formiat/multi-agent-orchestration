@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Bug Investigation"
+  short_description: "Let Claude investigate a bug and iterate on INVESTIGATION.md"
+  default_prompt: "Use $claude-bug-investigation to have local Claude investigate task_id=TASK-1234 and create or refine INVESTIGATION.md."

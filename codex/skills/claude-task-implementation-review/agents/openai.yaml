@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Task Implementation"
+  short_description: "Let Claude implement and iterate on review"
+  default_prompt: "Use $claude-task-implementation-review to have local Claude implement from PLAN.md when it exists, or directly from implementation_hint=\"...\" when no PLAN.md exists, then review the commits."

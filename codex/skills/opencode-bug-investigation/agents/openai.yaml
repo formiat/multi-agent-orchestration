@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode Bug Investigation"
+  short_description: "Let OpenCode investigate a bug and review it"
+  default_prompt: "Use $opencode-bug-investigation to have local OpenCode investigate task_id=TASK-1234 and create or refine INVESTIGATION.md."

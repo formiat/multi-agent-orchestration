@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode Task Planning"
+  short_description: "Let OpenCode draft PLAN.md and review it"
+  default_prompt: "Use $opencode-task-planning to have local OpenCode create and iterate on PLAN.md for task_id=TASK-1234."

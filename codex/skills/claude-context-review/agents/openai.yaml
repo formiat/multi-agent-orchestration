@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Context Review"
+  short_description: "Let Claude and Codex jointly review any local target from a prompt-hint"
+  default_prompt: "Use $claude-context-review to have local Claude review a branch, commit, MR, diff, or other local target from the current repository context and a freeform review hint."

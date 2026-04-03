@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Context Investigation"
+  short_description: "Let Claude investigate from current branch context"
+  default_prompt: "Use $claude-context-investigation to have local Claude create or refine INVESTIGATION.md from the current branch context and a freeform prompt."

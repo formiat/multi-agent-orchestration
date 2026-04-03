@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode Task Implementation Review"
+  short_description: "Let OpenCode implement and review the result"
+  default_prompt: "Use $opencode-task-implementation-review to have local OpenCode implement from PLAN.md or a direct implementation prompt, then review the result in a loop."

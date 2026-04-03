@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode Context Investigation"
+  short_description: "Let OpenCode investigate a bug from branch context"
+  default_prompt: "Use $opencode-context-investigation to have local OpenCode investigate a bug from the current branch context and create or refine INVESTIGATION.md."

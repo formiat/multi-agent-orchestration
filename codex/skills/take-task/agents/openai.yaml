@@ -1,0 +1,4 @@
+interface:
+  display_name: "Take Task"
+  short_description: "Read a task, prepare PLAN.md, and commit it"
+  default_prompt: "Use $take-task to start a task from Notion, ensure the right task branch exists, write PLAN.md in English, and commit it as a separate local commit."

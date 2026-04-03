@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Context Planning"
+  short_description: "Let Claude plan from current branch context"
+  default_prompt: "Use $claude-context-planning to have local Claude create or refine PLAN.md from the current branch context and a freeform prompt."
