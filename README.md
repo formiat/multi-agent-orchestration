@@ -68,6 +68,36 @@ All Codex workflow skills follow the same high-level pattern.
 6. **Independent review loop**
    Codex does not trust delegated output by default. It re-reads the repository, checks the current branch state, evaluates artifacts, verifies claims, and sends review findings back as consultative follow-up rounds until the workflow is good enough or explicitly blocked.
 
+## Workflow Model
+
+These skills are not a generic task runner. They encode a specific orchestration pattern:
+
+- **Orchestrator/reviewer -> delegated worker**
+  Codex owns orchestration and review. Claude or OpenCode owns bounded execution. The separation is deliberate: one side acts, the other side challenges and validates.
+
+- **Artifact-driven workflow**
+  State is not kept only in memory or chat history. It lives in durable artifacts such as `PLAN.md`, `INVESTIGATION.md`, `CLAUDE_SESSION.json`, `OPENCODE_SESSION.json`, `./.codex/inbox.md`, and `./.codex/outbox.md`.
+
+- **Mailbox-style file IPC**
+  Request and response move through inbox/outbox files rather than a native agent API. That keeps the handoff explicit, auditable, and easy to resume.
+
+- **Persistent-session orchestration**
+  Delegated Claude sessions are reused through `session_uuid` and `claude -p --resume`, and OpenCode sessions are reused through their session metadata. The workflow is designed for continuity, not one-shot prompts.
+
+- **Human-in-the-loop automation**
+  New sessions require explicit approval. Pushes are gated. Quality gates are manual where they need to be, even when the delegated worker can automate the heavy lifting.
+
+- **Cyclic state machine, not a simple DAG**
+  The workflow is intentionally iterative. It loops through implement -> review -> revise, with retries and stop criteria such as “quality reached” or “disagreement is irreconcilable.” This is closer to a controlled state machine than a one-pass pipeline.
+
+What this buys us:
+
+- roles are separated correctly, so execution and skepticism do not collapse into one agent;
+- workflow state is visible in files, not hidden in ephemeral chat;
+- the system supports review loops instead of single-shot generation;
+- guardrails are explicit: do not push automatically, do not create new sessions without approval, run tests and validation, and keep asking until the work is actually good enough;
+- persistence through session files makes the process resumable rather than disposable.
+
 ## Core Codex Workflow Skills
 
 ### Direct Codex workflows
