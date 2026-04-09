@@ -1,6 +1,6 @@
 ---
 name: take-task
-description: "Start work on a task by task id: read the Notion task, inspect related tasks and local commits, ensure the correct task branch exists, investigate the relevant code, write PLAN.md in English, and commit the plan as a separate local commit. Use when the user invokes $take-task or asks to begin a task such as TASK-1234."
+description: "Start work on a task by id: read the Notion task, inspect related tasks and local commits, ensure the correct task branch exists, investigate the relevant code, write PLAN.md in English, and commit the plan as a separate local commit. Use when the user invokes $take-task or asks to begin a task such as TASK-1234."
 ---
 
 # Take Task

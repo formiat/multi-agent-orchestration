@@ -19,6 +19,8 @@ If `extra_context` is not given, do not ask.
 
 - Read the repository `AGENTS.md` before starting.
 - If the repository defines extra startup context loading, do that first.
+- Strictly forbidden: do not modify any files under any circumstances as part of this workflow.
+- Strictly forbidden: do not create commits under any circumstances as part of this workflow.
 - Follow the current repository `CLAUDE.md` and local repo state when composing the MR description.
 - Never overwrite an MR description blindly. If an MR already exists, always read its current description first and preserve the Notion link and any other manually written content.
 - When updating an existing MR description, preserve the Notion link at the very top.

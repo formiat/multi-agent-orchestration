@@ -7,6 +7,11 @@ agent: build
 
 Create or update the GitLab Merge Request for the current branch.
 
+Hard restrictions for this workflow:
+- Do not modify any files.
+- Do not create any commits.
+- The existing rule about not pushing commits automatically remains unchanged and still applies as written.
+
 ## Step 1: Determine current branch and check for existing MR
 
 ```bash
@@ -14,7 +19,7 @@ git branch --show-current
 glab mr list --source-branch <current-branch>
 ```
 
-Also determine whether the branch has unpushed local commits. If it is ahead of its upstream, push the current branch before any MR create/update action, using the same safety rules as below. The MR must reflect the current local `HEAD`, not an older remote state.
+Also determine whether the branch has unpushed local commits. If it is ahead of its upstream, push the current branch before any MR create/update action, using the same safety rules as below. The MR must reflect the current local `HEAD`, not an older remote state. This workflow may observe local commits and may push them when the existing push rules allow it, but it must never create or amend commits itself.
 
 ## Step 2a: If MR exists — update description
 

@@ -36,8 +36,8 @@ This workflow adds review-target semantics, review-specific prompt requirements,
 
 - Wait until Claude writes a substantive review to `./.codex/outbox.md` or clearly reports that it is blocked there.
 - If project-file changes appear anyway, treat them as completion/result signals, not as signs of ongoing work.
-- If dirty project-file changes appear, wait up to `2` minutes for a local commit before reviewing uncommitted changes.
-- If a local commit appears, wait up to `2` minutes for `./.codex/outbox.md` before reviewing the commit without outbox.
+- If dirty project-file changes appear, wait exactly `3` minutes before the next check for a local commit; review uncommitted changes only if the commit is still missing after that check.
+- If a local commit appears, wait exactly `3` minutes before the next check for `./.codex/outbox.md`; review the commit without outbox only if outbox is still missing after that check.
 
 ## Independent verification focus
 
@@ -51,13 +51,14 @@ This workflow adds review-target semantics, review-specific prompt requirements,
 
 - Review Claude's review aggressively and skeptically.
 - Look for missed bugs, false positives, weak evidence, missing edge cases, unsupported claims, or anything important that Claude failed to notice on its own.
-- For each review round, overwrite `./.codex/inbox.md` with a consultative review that lists findings, risks, objections, facts from the local repo or local git state that Claude ignored or contradicted, and independently discovered facts or counterexamples, then ask Claude to either update its review in outbox or explain why it disagrees.
-- Do not edit project files locally as part of the review. Keep local changes limited to workflow/support files such as inbox, outbox, and `CLAUDE_SESSION.json`.
+- For each review round, first clear `./.codex/inbox.md` locally with `truncate -s 0` and verify that the inbox size is `0`, then write a consultative review there that lists findings, risks, objections, facts from the local repo or local git state that Claude ignored or contradicted, and independently discovered facts or counterexamples, and ask Claude to either update its review in outbox or explain why it disagrees.
+- Do not edit project files locally as part of the review. Keep local changes limited to workflow/support files such as `./.codex/inbox.md`, `./.codex/outbox.md`, and `CLAUDE_SESSION.json`.
 
 ## Deliverable
 
 Report to the user:
 
+- the workflow stop reason; if the stop reason was reaching the quality bar, state that explicitly and include the achieved quality assessment;
 - the main review findings, or explicitly that no findings were found;
 - what you independently verified yourself;
 - any remaining disagreements with Claude;

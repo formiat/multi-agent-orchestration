@@ -36,8 +36,8 @@ This workflow adds context-based investigation bootstrap, investigation-specific
 
 - Wait until Claude writes `INVESTIGATION.md`, creates a local commit without pushing it, and writes the round summary to `./.codex/outbox.md`.
 - Treat dirty project-file changes, local commits, `INVESTIGATION.md`, and `./.codex/outbox.md` as completion/result signals, not as signs of ongoing work.
-- If dirty project-file changes appear, wait up to `2` minutes for a local commit before reviewing uncommitted changes.
-- If a local commit appears, wait up to `2` minutes for `./.codex/outbox.md` before reviewing the commit without outbox.
+- If dirty project-file changes appear, wait exactly `3` minutes before the next check for a local commit; review uncommitted changes only if the commit is still missing after that check.
+- If a local commit appears, wait exactly `3` minutes before the next check for `./.codex/outbox.md`; review the commit without outbox only if outbox is still missing after that check.
 
 ## Independent verification focus
 
@@ -48,7 +48,7 @@ This workflow adds context-based investigation bootstrap, investigation-specific
 
 - Review the investigation aggressively and skeptically.
 - Look for unsupported claims, missing evidence, contradictions, weak timelines, missing blame/history analysis, missing test-coverage implications, fix directions that are not grounded in the evidence, and anything important that Claude failed to discover on its own.
-- For each review round, overwrite `./.codex/inbox.md` with a consultative review that lists findings, risks, unsupported claims, objections, and independently discovered facts or counterexamples, then ask Claude to either update `INVESTIGATION.md` or explain why it disagrees in outbox.
+- For each review round, first clear `./.codex/inbox.md` locally with `truncate -s 0` and verify that the inbox size is `0`, then write a consultative review there that lists findings, risks, unsupported claims, objections, and independently discovered facts or counterexamples, and ask Claude to either update `INVESTIGATION.md` or explain why it disagrees in outbox.
 - Do not patch `INVESTIGATION.md` locally while reviewing; send findings back to Claude for evaluation.
 - Keep local changes limited to workflow/support files such as `./.codex/inbox.md`, `./.codex/outbox.md`, and `CLAUDE_SESSION.json`.
 
@@ -57,6 +57,7 @@ This workflow adds context-based investigation bootstrap, investigation-specific
 Report to the user:
 
 - the final investigation quality assessment;
+- the workflow stop reason; if the stop reason was reaching the quality bar, state that explicitly and include the achieved quality assessment;
 - the most likely root cause and strongest evidence;
 - which hypotheses were ruled out and which remain open;
 - the last relevant Claude commit hash if Claude committed changes;

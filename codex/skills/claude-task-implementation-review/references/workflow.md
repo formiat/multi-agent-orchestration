@@ -46,8 +46,8 @@ This workflow adds implementation-scope selection, implementation/test-specific 
 
 - Wait until Claude finishes implementation, creates a local commit without pushing it, and writes the round summary to `./.codex/outbox.md`, or clearly reports that it is blocked there.
 - Treat dirty project-file changes, local commits, implementation artifacts, and `./.codex/outbox.md` as completion/result signals, not as signs of ongoing work.
-- If dirty project-file changes appear, wait up to `2` minutes for a local commit before reviewing uncommitted changes.
-- If a local commit appears, wait up to `2` minutes for `./.codex/outbox.md` before reviewing the commit without outbox.
+- If dirty project-file changes appear, wait exactly `3` minutes before the next check for a local commit; review uncommitted changes only if the commit is still missing after that check.
+- If a local commit appears, wait exactly `3` minutes before the next check for `./.codex/outbox.md`; review the commit without outbox only if outbox is still missing after that check.
 
 ## Independent verification focus
 
@@ -57,7 +57,7 @@ This workflow adds implementation-scope selection, implementation/test-specific 
 
 - Focus review aggressively and skeptically on bugs, regressions, missing tests, mismatches with the active scope source, contradictions with `INVESTIGATION.md`, contradictions with any user-supplied implementation hint/comment, weak assumptions, and anything important that Claude failed to notice on its own.
 - Do not patch project code locally while reviewing. You may inspect files, run builds, run tests, run formatting/lint checks, and update workflow support files, but implementation fixes must go back to Claude for evaluation.
-- For each review round, overwrite `./.codex/inbox.md` with a consultative review that lists findings, risks, objections, and independently discovered facts or counterexamples, and restate any user-supplied implementation hint/comment that the current implementation ignored or contradicted.
+- For each review round, first clear `./.codex/inbox.md` locally with `truncate -s 0` and verify that the inbox size is `0`, then write a consultative review there that lists findings, risks, objections, and independently discovered facts or counterexamples, and restate any user-supplied implementation hint/comment that the current implementation ignored or contradicted.
 - Ask Claude to either update the implementation or explain why it disagrees in `./.codex/outbox.md`.
 - Require Claude in review rounds to read from inbox, write to outbox, commit after changing project files, keep changed tests self-contained and portable, rerun those tests, then run `cargo fmt --all`, then `make clippy`, or explain in outbox why `make clippy` could not be run.
 
@@ -65,6 +65,7 @@ This workflow adds implementation-scope selection, implementation/test-specific 
 
 Report to the user:
 
+- the workflow stop reason; if the stop reason was reaching the quality bar, state that explicitly and include the achieved quality assessment;
 - what Claude implemented;
 - what review findings remain, including any explicit disagreements;
 - what was verified locally;

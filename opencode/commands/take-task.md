@@ -1,5 +1,5 @@
 ---
-description: Start a task by task id: read Notion, ensure task branch, and write PLAN.md.
+description: Start a task by id: read Notion, ensure task branch, and write PLAN.md.
 agent: build
 ---
 

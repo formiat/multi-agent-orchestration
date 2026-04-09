@@ -50,8 +50,8 @@ This workflow adds task-scoped branch preflight, investigation-specific OpenCode
 
 - Wait until OpenCode writes `INVESTIGATION.md`, creates a local commit without pushing it, and writes the round summary to `./.codex/outbox.md`.
 - Treat dirty project-file changes, local commits, `INVESTIGATION.md`, and `./.codex/outbox.md` as completion/result signals, not as signs of ongoing work.
-- If dirty project-file changes appear, wait up to `2` minutes for a local commit before reviewing uncommitted changes.
-- If a local commit appears, wait up to `2` minutes for `./.codex/outbox.md` before reviewing the commit without outbox.
+- If dirty project-file changes appear, wait exactly `3` minutes before the next check for a local commit; review uncommitted changes only if the commit is still missing after that check.
+- If a local commit appears, wait exactly `3` minutes before the next check for `./.codex/outbox.md`; review the commit without outbox only if outbox is still missing after that check.
 - If outbox and cheaper external signals are insufficient, run only a narrow `rg`/`grep` marker check on the freshest `1-2` OpenCode log files newer than the current request start before any export. Do not read raw log bodies in the normal path.
 - Use `opencode export <session_id>` only as a strictly discouraged fallback when those fresh-log checks are inconclusive, at most once every `5` minutes, by writing a stripped timestamped snapshot under `/tmp/`, reading only `root.messages[-1]` first, and reading `root.messages[-2]` only if `root.messages[-1]` is insufficient.
 
@@ -75,6 +75,7 @@ This workflow adds task-scoped branch preflight, investigation-specific OpenCode
 Report to the user:
 
 - the final investigation quality assessment;
+- the workflow stop reason; if the stop reason was reaching the quality bar, state that explicitly and include the achieved quality assessment;
 - the most likely root cause and strongest evidence;
 - which hypotheses were ruled out and which remain open;
 - the last relevant OpenCode commit hash if OpenCode committed changes;

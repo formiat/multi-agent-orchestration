@@ -35,7 +35,7 @@ Apply these rules in every `claude-*` workflow unless the workflow reference add
 - Use `claude -p -c "<prompt>"` when the explicit goal is to continue the current project conversation from the current directory without first resolving a session UUID.
 - Important limitation: in batch mode, `claude -p --resume <value>` requires a real session UUID and does not accept a human-readable alias.
 - If a real session UUID is needed beyond the standard discovery rules, find it under `$HOME/.claude/projects/<project_key>/` and then use `claude -p --resume <session_uuid> ...`.
-- Before every Claude request, overwrite `./.codex/inbox.md`, clear `./.codex/outbox.md` with `truncate -s 0`, and immediately verify that the outbox size is `0`.
+- Before every Claude request, first clear `./.codex/inbox.md` locally with `truncate -s 0` and immediately verify that the inbox size is `0`, then write the new delegated request into `./.codex/inbox.md`. Also clear `./.codex/outbox.md` with `truncate -s 0` and immediately verify that the outbox size is `0`.
 - After every local create, overwrite, truncation, or other modification of `./.codex/inbox.md` or `./.codex/outbox.md`, immediately run `sudo chmod -R 777 ./.codex/`. This is a local Codex-side hygiene step, not an instruction for Claude.
 - Every outer Claude prompt must explicitly tell Claude which file to read and which file to write.
 - Every outer Claude prompt must tell Claude to clear `./.codex/outbox.md` before writing its answer so the file contains only the latest response.

@@ -44,8 +44,8 @@ This workflow adds context-based planning bootstrap, stricter Claude session mat
 
 - Wait until Claude writes `PLAN.md`, creates a local commit without pushing it, and writes the round summary to `./.codex/outbox.md`.
 - Treat dirty project-file changes, local commits, `PLAN.md`, and `./.codex/outbox.md` as completion/result signals, not as signs of ongoing work.
-- If dirty project-file changes appear, wait up to `2` minutes for a local commit before reviewing uncommitted changes.
-- If a local commit appears, wait up to `2` minutes for `./.codex/outbox.md` before reviewing the commit without outbox.
+- If dirty project-file changes appear, wait exactly `3` minutes before the next check for a local commit; review uncommitted changes only if the commit is still missing after that check.
+- If a local commit appears, wait exactly `3` minutes before the next check for `./.codex/outbox.md`; review the commit without outbox only if outbox is still missing after that check.
 
 ## Independent verification focus
 
@@ -55,7 +55,7 @@ This workflow adds context-based planning bootstrap, stricter Claude session mat
 
 - Review the plan aggressively and skeptically.
 - Look for flaws, missing pieces, weak assumptions, insufficient test-coverage expectations, inconsistencies, contradictions with `INVESTIGATION.md`, contradictions with the supplied prompt/context, and anything important that Claude failed to notice on its own.
-- For each review round, overwrite `./.codex/inbox.md` with a consultative review that lists findings, risks, objections, investigation findings or prompt facts that the plan ignored or contradicted, and independently discovered facts or counterexamples, then ask Claude to either update `PLAN.md` or explain why it disagrees in outbox.
+- For each review round, first clear `./.codex/inbox.md` locally with `truncate -s 0` and verify that the inbox size is `0`, then write a consultative review there that lists findings, risks, objections, investigation findings or prompt facts that the plan ignored or contradicted, and independently discovered facts or counterexamples, and ask Claude to either update `PLAN.md` or explain why it disagrees in outbox.
 - Do not patch `PLAN.md` locally while reviewing; send findings back to Claude for evaluation.
 - Keep local changes limited to workflow/support files such as `./.codex/inbox.md`, `./.codex/outbox.md`, and `CLAUDE_SESSION.json`.
 
@@ -64,6 +64,7 @@ This workflow adds context-based planning bootstrap, stricter Claude session mat
 Report to the user:
 
 - the final plan quality assessment;
+- the workflow stop reason; if the stop reason was reaching the quality bar, state that explicitly and include the achieved quality assessment;
 - what major issues were found and whether they were fixed or explicitly disputed;
 - the last relevant Claude commit hash if Claude committed changes;
 - whether the workflow stopped because Claude could not complete the work for any reason.

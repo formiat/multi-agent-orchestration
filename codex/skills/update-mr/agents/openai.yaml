@@ -1,4 +1,4 @@
 interface:
   display_name: "Update MR"
   short_description: "Create or update GitLab MR for current branch"
-  default_prompt: "Use $update-mr to create or update the GitLab MR for the current branch, preserving the Notion link and existing manual description content."
+  default_prompt: "Use $update-mr to create or update the GitLab MR for the current branch, preserving the Notion link and existing manual description content. Do not modify any files and do not create any commits."
