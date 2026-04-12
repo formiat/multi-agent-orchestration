@@ -49,24 +49,24 @@ Important:
 
 Create or update `PLAN.md` in the repo root. Write it in English and include:
 
-1. `Задача`
+1. `Task`
    - `TASK-<task_id>` title and a short summary.
-2. `Контекст`
+2. `Context`
    - only the task facts that materially affect implementation;
    - if `INVESTIGATION.md` exists, briefly list the findings that constrain the plan.
-3. `Затронутые компоненты`
+3. `Affected components`
    - crates/modules/files that likely need changes.
-4. `План реализации`
+4. `Implementation plan`
    - numbered, concrete steps;
    - include file paths when known;
    - describe important technical decisions and alternatives when a choice is needed.
-5. `Тестирование`
-   - постараться придумать максимум возможных автотестов затронутого и нового функционала;
-   - разделить все предложенные автотесты на 3 категории: 1) не требующие рефакторинга, 2) требующие легкого рефакторинга, 3) требующие тяжелого рефакторинга;
-   - все 3 категории явно перечислить в плане, а категорию 1 отдельно пометить как идущую к реализации вместе с основным функционалом;
+5. `Testing`
+   - propose as many practical automated tests as possible for the affected and new functionality;
+   - group all proposed automated tests into three categories: 1) no refactoring required, 2) light refactoring required, 3) heavy refactoring required;
+   - list all three categories explicitly in the plan, and mark category 1 separately as planned for implementation together with the main functional changes;
    - manual verification only as a supplement;
    - keep test design portable and self-contained.
-6. `Открытые вопросы`
+6. `Open questions`
    - anything that still needs clarification before implementation.
 
 ## Step 5: Commit the plan

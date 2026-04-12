@@ -13,6 +13,11 @@ This workflow adds context-based investigation semantics, OpenCode command usage
 
 - Use the default OpenCode session discovery rules from `../../.shared/delegated-agent/providers/opencode/session.md`.
 
+## Session metadata discipline
+
+- If an existing OpenCode session is reused and `OPENCODE_SESSION.json` does not exist yet, create and commit it before sending the first delegated request into that session.
+- If a new OpenCode session is explicitly approved and bootstrapped, discover its real `session_id` immediately after bootstrap via the shared before/after discovery rules, create and commit `OPENCODE_SESSION.json` immediately, and only then continue normal waiting for outbox or other round results. Do not wait for turn completion before fixing the new session metadata.
+
 ## New-session bootstrap
 
 - When the user explicitly approves creating a new OpenCode session, bootstrap with:

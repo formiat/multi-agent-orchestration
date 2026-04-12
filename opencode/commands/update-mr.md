@@ -35,11 +35,11 @@ Extract and preserve from the existing description:
 
 Then compose the new description incorporating:
 1. Preserved Notion link at the very top
-2. Description of what was done (`## Что сделано`)
+2. Description of what was done (`## What Was Done`)
 3. Any additional context from the current conversation
-4. If the MR touches HTTP or web routes, a dedicated `## Затронутые роуты` section
+4. If the MR touches HTTP or web routes, a dedicated `## Touched Routes` section
 
-Rules for `## Затронутые роуты`:
+Rules for `## Touched Routes`:
 - Include the full list of touched routes when the list is reasonably small.
 - If the MR touches many routes, or effectively all routes of a module, route patterns may be masked with `*` (for example `/api/camera-manager/*`).
 - Prefer concrete routes over masked patterns whenever practical.
@@ -71,10 +71,10 @@ glab mr create \
   --description "$(cat <<'EOF'
 {NOTION_URL}
 
-## Что сделано
+## What Was Done
 ...
 
-## Затронутые роуты
+## Touched Routes
 ...
 EOF
 )"
@@ -85,7 +85,7 @@ Rules:
 - Enable squash on merge + auto-delete source branch
 - MR title format: `[TASK-{TASK_ID}] {Description}`
 - Description starts with full Notion URL (from `notion task view`, not composed form)
-- If the MR touches HTTP or web routes, the description must contain a `## Затронутые роуты` section with the full list of touched routes.
+- If the MR touches HTTP or web routes, the description must contain a `## Touched Routes` section with the full list of touched routes.
 - Masking routes with `*` is allowed only when the list is very large or the whole route surface of a module is affected.
 
 ### After creating MR — update Notion task

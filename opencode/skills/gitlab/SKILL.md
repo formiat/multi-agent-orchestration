@@ -33,7 +33,7 @@ If push requires rebase — cancel, do not rebase. Inform the user instead.
 glab mr create --title "[TASK-{ID}] Description" --target-branch develop --squash-before-merge --remove-source-branch --yes --description "$(cat <<'EOF'
 https://www.notion.so/task-{TASK_ID}
 
-## Что сделано
+## What Was Done
 ...
 EOF
 )"
@@ -43,19 +43,19 @@ EOF
 - Enable squash on merge + auto-delete source branch
 - MR title format: `[TASK-{TASK_ID}] {Description}`
 
-### После создания MR: обновить Notion-таску
+### After Creating the MR: Update the Notion Task
 
-Положить ссылку на MR в раздел **Merge Request → BACKEND** таски.
+Put the MR link into the **Merge Request -> BACKEND** section of the task.
 
-**ВАЖНО:** Использовать только `update_block` in-place — НЕ использовать `pull | sed | push`, т.к. это делает полную замену всех блоков и ломает link-аннотации (ссылки становятся некликабельными).
+**IMPORTANT:** Use only in-place `update_block` updates. Do **not** use `pull | sed | push`, because that rewrites all blocks and breaks link annotations.
 
-Безопасный пайплайн:
+Safe sequence:
 
 ```bash
-# 1. Pull с сохранением в файл (создаёт sidecar с block ID)
+# 1. Pull and save to a file (creates a sidecar with block IDs)
 notion task pull {TASK_ID} --save-to /tmp/t{TASK_ID}.md
 
-# 2. Обновить только BACKEND-блок in-place через API
+# 2. Update only the BACKEND block in place via the API
 /home/formi/.local/share/pipx/venvs/notion-cli/bin/python3 - <<'EOF'
 import os, json
 from pathlib import Path
@@ -95,15 +95,15 @@ print(f"Updated BACKEND → {mr_url}")
 EOF
 ```
 
-### Ссылка на задачу в описании MR
+### Task Link in the MR Description
 
-**Всегда** начинай описание MR со ссылки на задачу Notion.
+**Always** start the MR description with the Notion task link.
 
-Приоритет источников ссылки:
-1. **Полноценная ссылка** из вывода `notion task view {ID}` (поле `URL:`) — предпочтительна, т.к. Notion иногда меняет числовые ID и композированная ссылка может инвалидироваться.
-2. **Композированная ссылка** `https://www.notion.so/task-{TASK_ID}` — использовать только если полная ссылка неизвестна.
+Link source priority:
+1. **Full link** from `notion task view {ID}` (`URL:` field) is preferred because Notion may change numeric IDs and a composed link can become invalid.
+2. **Composed link** `https://www.notion.so/task-{TASK_ID}` should be used only if the full link is unknown.
 
-Пример: если `notion task view 7687` вернул `URL: https://www.notion.so/8f21a6c94b0d47e2a1c38f5d6b7e9a10`, то в начало описания MR кладём именно эту ссылку, а не `https://www.notion.so/task-7687`.
+Example: if `notion task view 7687` returns `URL: https://www.notion.so/8f21a6c94b0d47e2a1c38f5d6b7e9a10`, use that exact URL at the top of the MR description instead of `https://www.notion.so/task-7687`.
 
 ## Update MR Description
 
@@ -123,7 +123,7 @@ Then compose and push updated description. **Never overwrite blindly** — losin
 glab mr update --description "$(cat <<'EOF'
 https://www.notion.so/...   ← preserve existing Notion link (full URL preferred over task-{ID} form)
 
-## Что сделано
+## What Was Done
 ...
 EOF
 )"

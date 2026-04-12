@@ -25,6 +25,8 @@ Apply these rules in every `claude-*` workflow unless the workflow reference nar
 - Check whether Claude completed the round by inspecting the outbox size first.
 - If batch stdout is silent for a while, do not treat that by itself as a hang. `claude -p` often prints nothing until completion.
 - If batch stdout is noisy, truncated, or visually corrupted, treat the Claude `.jsonl` session log as the source of truth for the last assistant message, tool calls and tool results, whether Claude actually finished the turn, and commit hashes or build results that may not be legible in stdout.
+- After each completed `claude -p` run, keep outbox as the primary result signal. Inspect that run's stdout once only when outbox is still empty, missing, or insufficient to explain the terminal state before deciding whether to retry or stop. Do not reread the whole stdout transcript by default; prefer a compact marker search or minimal terminal slice for decisive phrases such as `You've hit your limit`, `rate limit`, `quota`, `usage limit`, `permission`, `denied`, `failed`, `error`, or similar explicit stop markers.
+- If the completed run's stdout already confirms a service-cap condition, stop immediately and report it. Do not schedule another wait, retry, or review pass first.
 
 ## Hang detection and retries
 

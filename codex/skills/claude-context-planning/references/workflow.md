@@ -14,16 +14,23 @@ This workflow adds context-based planning bootstrap, stricter Claude session mat
 ## Claude session matching override
 
 - When searching the current project's Claude logs, do not grep raw text for historical mentions of the current Codex session name and do not load whole session logs into model context.
-- Use local shell tooling to extract only a compact per-file summary: session UUID, latest `type == "custom-title"` value, latest `type == "agent-name"` value, and optional recency metadata.
-- In each file, track the latest `custom-title` value and the latest `agent-name` value, then treat only those latest values as the session's current effective names.
-- Match the current Codex session name only by exact equality against those latest values.
+- Use local shell tooling to extract only a compact per-file summary: session UUID, latest `type == "custom-title"` value from JSON key `customTitle`, latest `type == "agent-name"` value from JSON key `agentName`, and optional recency metadata.
+- In each file, track the latest `custom-title` value and the latest `agent-name` value from those exact JSON keys, then treat only those latest values as the session's current effective names.
+- Match the current Codex session name only by exact equality against those latest effective names.
 - Do not special-case or filter out custom names such as `--trash-*`; if that is the current exact name, it is a valid match.
-- Use file mtime or other recency signals only as a tie-breaker after exact current-name matching, never before it.
+- If multiple exact matches exist, select the freshest exact match by file `mtime` as the one current session to reuse.
+- Use file `mtime` or other recency signals only as a tie-breaker after exact current-name matching, never before it.
+- Do not treat a broken extraction script or missing `customTitle`/`agentName` parsing as proof that no matching session exists. Fix discovery first; only after correct discovery may zero matches be treated as real zero matches.
 - This override replaces the default session-discovery matching from `../../.shared/delegated-agent/providers/claude/session.md`.
+
+## Session metadata discipline
+
+- If an existing Claude session is reused and `CLAUDE_SESSION.json` does not exist yet, create and commit it before sending the first delegated request into that session.
+- If a new Claude session is explicitly approved and bootstrapped, discover its real `session_uuid` immediately after bootstrap via the shared before/after discovery rules, create and commit `CLAUDE_SESSION.json` immediately, and only then continue normal waiting for outbox or other round results. Do not wait for turn completion before fixing the new session metadata.
 
 ## New-session bootstrap
 
-- When the user explicitly approves creating a new Claude session, bootstrap with a English request that tells Claude to `Выполни /plan-from-context.` and includes the current prompt/context below it.
+- When the user explicitly approves creating a new Claude session, bootstrap with an English request that tells Claude to `Run /plan-from-context.` and includes the current prompt/context below it.
 - That bootstrap must tell Claude not to commit inbox/outbox, to commit planning results, never to push automatically or without an explicit user command, to write minimal status in English to `./.codex/outbox.md`, to keep resulting human-facing workflow artifacts/output in English by default, and to keep any code comments added or edited in project files in English only.
 - If the existing `PLAN.md` already produced review findings, use that first consultative review message instead of the fresh bootstrap request.
 

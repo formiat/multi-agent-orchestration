@@ -26,6 +26,7 @@ If `extra_context` is not given, do not ask.
 - When updating an existing MR description, preserve the Notion link at the very top.
 - When no MR exists, derive the task id from the current branch name if possible and fetch the full Notion URL via `notion task view <TASK_ID>` instead of composing a guessed URL.
 - If the MR touches HTTP or web routes, the MR description must include the full list of touched routes.
+- If the MR adds or changes metrics, the MR description must explicitly and clearly describe all added/changed metrics and what each of them means.
 - If the route list is very large or the MR effectively touches all routes of a module, route patterns may be masked with `*`, for example `/api/collage/*`.
 - Prefer explicit concrete routes over masked patterns whenever the full list is still reasonably small.
 - If the branch is not yet on `origin`, push it only as part of this explicitly invoked workflow and only after the upstream safety check from the workflow reference.
