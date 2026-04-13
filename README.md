@@ -98,6 +98,110 @@ What this buys us:
 - guardrails are explicit: do not push automatically, do not create new sessions without approval, run tests and validation, and keep asking until the work is actually good enough;
 - persistence through session files makes the process resumable rather than disposable.
 
+## Provider-Agnostic Orchestration Lifecycle
+
+The same control algorithm can be applied to Claude, OpenCode, or another delegated executor. The transport and session APIs may differ, but the orchestration state machine should stay consistent.
+
+### Round Lifecycle (macro algorithm)
+
+1. **Initialize run**
+   Record `run_id`, workflow type, target output for this round (`PLAN.md`, `INVESTIGATION.md`, review output, or implementation commit), round success criteria, required artifacts, and forbidden side effects (for example `auto-push`).
+
+2. **Bind executor session**
+   Reuse session metadata when valid. If metadata is missing, discover reusable sessions. If discovery is ambiguous (none or multiple matches), stop for human decision unless explicit approval to create a new session is already given.
+
+3. **Dispatch request**
+   Serialize the request into provider transport (`inbox`, batch prompt, or command envelope), then record `dispatch_time`, `attempt_no`, and `request_fingerprint` (used to enforce exact-same-request retries).
+
+4. **Cooldown window**
+   Wait for a fixed window (for example 3 to 10 minutes) unless there is an immediate startup failure. This avoids noisy polling while a long executor step is still active.
+
+5. **Monitor with cheap-first signals**
+   Poll low-cost signals first (`git status`, artifact timestamps, process/session heartbeat). Escalate to expensive probes (`outbox`, provider stdout export, full session export) only when cheap signals are inconclusive. Persist every probe as a run-log event.
+
+6. **Classify round state**
+   Use explicit states:
+   - `in_progress`
+   - `completed_success`
+   - `completed_blocked`
+   - `failed_silent_exit`
+   - `failed_likely_hang`
+   - `failed_service_cap` (rate-limit/quota/provider cap)
+   - `failed_protocol` (artifact contract violation)
+
+7. **Apply state-specific reaction**
+   - `completed_success`: continue to orchestrator-side independent verification.
+   - `completed_blocked`: surface blocker and decide next action.
+   - `failed_likely_hang`: terminate stale process/session, then resend the identical request.
+   - `failed_silent_exit`: resend the identical request.
+   - `failed_service_cap`: stop immediately and report; do not silently continue with scope drift.
+   - `failed_protocol`: stop or request correction round with an explicit contract error report.
+
+8. **Enforce retry policy**
+   Track `consecutive_restart_counter`, retry only with the same `request_fingerprint`, reset counter after successful completion, and stop as unrecoverable after a defined cap (for example 5 restarts).
+
+9. **Post-process successful round**
+   Orchestrator independently validates artifacts, diff quality, test signals, and scope adherence. If quality is insufficient, create a feedback round. If quality passes threshold (for example >= 8/10), finish workflow.
+
+10. **Finalize workflow stop reason**
+   Use terminal classifications:
+   - `done_quality_reached`
+   - `done_irreconcilable_disagreement`
+   - `stopped_service_cap`
+   - `stopped_retry_exhausted`
+   - `stopped_human_decision_required`
+   - `stopped_external_blocker`
+   - `stopped_protocol_violation`
+   - `stopped_cancelled_by_user`
+
+### State Machine (compact transition map)
+
+| State | Event / Condition | Guard | Action | Next State |
+| --- | --- | --- | --- | --- |
+| `INIT` | run created | inputs valid | initialize run metadata and target artifact | `SESSION_BINDING` |
+| `SESSION_BINDING` | metadata exists | session ref valid | bind session | `DISPATCH_PREP` |
+| `SESSION_BINDING` | metadata missing | exactly one discovered session | bind discovered session | `DISPATCH_PREP` |
+| `SESSION_BINDING` | metadata missing | zero or multiple sessions | request human decision | `WAIT_HUMAN` |
+| `WAIT_HUMAN` | human approved create | `approved=true` | create session, persist metadata | `DISPATCH_PREP` |
+| `WAIT_HUMAN` | human selected session | chosen session valid | bind selected session | `DISPATCH_PREP` |
+| `WAIT_HUMAN` | human aborted | n/a | stop | `STOPPED_HUMAN_DECISION_REQUIRED` |
+| `DISPATCH_PREP` | request ready | n/a | build payload, save fingerprint, increment attempt | `DISPATCHED` |
+| `DISPATCHED` | batch call sent | n/a | store dispatch time | `COOLDOWN` |
+| `COOLDOWN` | cooldown elapsed | no fatal startup error | start polling loop | `POLL_CHEAP` |
+| `COOLDOWN` | provider startup failure | service-cap/quota/rate-limit | mark terminal reason | `STOPPED_SERVICE_CAP` |
+| `POLL_CHEAP` | progress signals present | n/a | log progress event | `IN_PROGRESS` |
+| `POLL_CHEAP` | signals inconclusive | n/a | escalate to expensive probe | `POLL_EXPENSIVE` |
+| `POLL_CHEAP` | process gone and outputs missing | required outputs absent | classify failure | `FAILED_SILENT_EXIT` |
+| `IN_PROGRESS` | required outputs present | artifact contract satisfied | collect outputs | `ROUND_SUCCESS` |
+| `IN_PROGRESS` | prolonged silence | stale session/export too | classify failure | `FAILED_LIKELY_HANG` |
+| `IN_PROGRESS` | explicit blocker | n/a | capture blocker | `ROUND_BLOCKED` |
+| `IN_PROGRESS` | provider cap error | n/a | capture provider failure | `STOPPED_SERVICE_CAP` |
+| `IN_PROGRESS` | output contract violated | malformed/missing required sections | capture protocol error | `FAILED_PROTOCOL` |
+| `POLL_EXPENSIVE` | outputs complete | artifact contract satisfied | collect outputs | `ROUND_SUCCESS` |
+| `POLL_EXPENSIVE` | explicit blocker | n/a | capture blocker | `ROUND_BLOCKED` |
+| `POLL_EXPENSIVE` | stale and no outputs | n/a | classify failure | `FAILED_LIKELY_HANG` |
+| `POLL_EXPENSIVE` | process ended, no outputs | n/a | classify failure | `FAILED_SILENT_EXIT` |
+| `POLL_EXPENSIVE` | output contract violated | malformed/missing required sections | capture protocol error | `FAILED_PROTOCOL` |
+| `FAILED_LIKELY_HANG` | retries left | restarts < limit | terminate stale session/process and resend identical request | `DISPATCH_PREP` |
+| `FAILED_SILENT_EXIT` | retries left | restarts < limit | resend identical request | `DISPATCH_PREP` |
+| `FAILED_LIKELY_HANG` | retries exhausted | restarts >= limit | mark terminal | `STOPPED_RETRY_EXHAUSTED` |
+| `FAILED_SILENT_EXIT` | retries exhausted | restarts >= limit | mark terminal | `STOPPED_RETRY_EXHAUSTED` |
+| `FAILED_PROTOCOL` | contract mismatch confirmed | not safely auto-recoverable | stop and report protocol failure | `STOPPED_PROTOCOL_VIOLATION` |
+| `ROUND_BLOCKED` | can be unblocked by human | n/a | report blocker and wait | `WAIT_HUMAN` |
+| `ROUND_BLOCKED` | cannot unblock now | n/a | stop with blocker reason | `STOPPED_EXTERNAL_BLOCKER` |
+| `ROUND_SUCCESS` | verification started | n/a | run independent orchestrator verification | `ORCH_VERIFY` |
+| `ORCH_VERIFY` | quality gate passed | score >= threshold | finalize | `DONE_QUALITY_REACHED` |
+| `ORCH_VERIFY` | quality gate failed | retry loop allowed | send feedback request | `DISPATCH_PREP` |
+| `ORCH_VERIFY` | irreconcilable disagreement | n/a | finalize | `DONE_IRRECONCILABLE_DISAGREEMENT` |
+
+### Additional Requirements That Prevent Drift
+
+- **Idempotent retries:** retries must be byte-equivalent or semantically equivalent to the original request; no silent scope expansion.
+- **Output contract versioning:** each workflow should declare expected artifact schema/sections so protocol failures are machine-detectable.
+- **Cancellation path:** user/operator cancel must be first-class and mapped to terminal `stopped_cancelled_by_user`.
+- **Observability baseline:** each run should keep an append-only event log with timestamps, state transitions, retry causes, and terminal reason.
+- **Orchestrator independence:** a delegated self-report is never treated as sufficient evidence without repository-level verification.
+
 ## Core Codex Workflow Skills
 
 ### Direct Codex workflows
