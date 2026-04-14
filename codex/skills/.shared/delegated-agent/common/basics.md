@@ -19,6 +19,24 @@ These delegated-agent workflows keep Codex as the orchestrator/reviewer and use 
 - Write delegated-agent requests/prompts in English unless the workflow reference or the user explicitly requires another language.
 - Require human-facing workflow artifacts/output to stay in English by default unless the user explicitly asked for another language or the target artifact is inherently not English.
 - Require all code comments that the delegated agent adds or edits in project files to remain in English only.
+- Require delegated-agent communication in this workflow (including outbox summaries and disagreement/justification text) to stay in English.
+
+## Executor mandatory checklist (must be present in every delegated outer prompt)
+
+- Explicitly tell the delegated agent to read `./.codex/inbox.md`.
+- Explicitly tell the delegated agent to clear and then write `./.codex/outbox.md`.
+- Explicitly forbid committing `./.codex/inbox.md` and `./.codex/outbox.md`.
+- Explicitly forbid pushing commits unless the user directly requested a push.
+- Explicitly require English for human-facing artifacts in planning/investigation/review workflows (for example `PLAN.md`, `INVESTIGATION.md`, outbox rationale), unless the user requested another language.
+- Explicitly require English-only code comments in project source files.
+- Explicitly require a local commit when project files were changed.
+- Explicitly require reporting commit hash and executed verification commands in outbox.
+- For Rust code changes, explicitly require `cargo fmt` and `make clippy` before commit (or equivalent repo-approved formatting/lint commands).
+- When tests are added or changed, explicitly require running new/changed tests.
+- When module code is changed, explicitly require running that module's test suite (or the smallest valid crate-level scope that covers the module).
+- Explicitly require surfacing any incomplete work, skipped checks, or failures in outbox (never silently omit them).
+- Explicitly require no destructive git operations (`reset --hard`, `checkout --`, etc.) unless the user asked for them directly.
+- Explicitly require preserving unrelated user changes in a dirty worktree.
 
 ## Review posture
 

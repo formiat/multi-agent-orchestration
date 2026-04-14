@@ -14,10 +14,13 @@ Apply these rules in every `claude-*` workflow unless the workflow reference add
 - Always run Claude from the current repository directory.
 - Before any Claude interaction, read the current git branch and check whether `CLAUDE_SESSION.json` already exists.
 - If `CLAUDE_SESSION.json` exists, parse it and reuse `session_uuid`.
+- If `CLAUDE_SESSION.json` exists, session discovery by name is forbidden; do not scan project logs for alternative candidates in this case.
 - If `CLAUDE_SESSION.json` does not exist, resolve the current Codex session name via the exact lookup `CODEX_THREAD_ID` -> matching `id` in `$HOME/.codex/session_index.jsonl` -> `thread_name`. Do not read Codex logs and do not broad-search `~/.codex` for this lookup.
-- Search the current project's Claude logs for candidate sessions whose latest effective name matches the current Codex session name. For Claude project `.jsonl` logs, extract names from the real JSON keys `customTitle` for `type == "custom-title"` and `agentName` for `type == "agent-name"`. Do not treat missing generic keys such as `title`, `name`, or `value` as authoritative for this lookup.
-- In each session file, track the latest `custom-title` event and the latest `agent-name` event, then treat only those latest values as that session's current effective names.
-- First collect only exact current-name matches. If there is exactly one exact-match candidate, use that `session_uuid` for continuation.
+- Search the current project's top-level Claude session logs (`$HOME/.claude/projects/<project_key>/*.jsonl`) for candidate sessions whose latest effective title matches the current Codex session name. Do not use sidechain/service subdirectories for this lookup.
+- For Claude project `.jsonl` logs, extract names only from the real JSON keys `customTitle` for `type == "custom-title"` and `agentName` for `type == "agent-name"`. Do not treat missing generic keys such as `title`, `name`, or `value` as authoritative for this lookup.
+- In each session file, compute one current effective title: prefer the latest `custom-title`; use the latest `agent-name` only when no `custom-title` exists in that session file.
+- Match candidates only by exact equality against that single effective title (not by union of both fields).
+- First collect only exact current-title matches. If there is exactly one exact-match candidate, use that `session_uuid` for continuation.
 - If there are multiple exact-match candidates, choose the freshest exact-match candidate by session-file `mtime`. Treat this as the default deterministic tie-breaker rather than as ambiguity that requires a new session.
 - If discovery produced a deterministic existing-session winner under these rules, creating a new Claude session is forbidden. Reuse the winner.
 - Only if multiple exact-match candidates remain genuinely indistinguishable after the recency tie-breaker, or if the discovery output is clearly incomplete/corrupted, ask the user what to do.
@@ -35,12 +38,13 @@ Apply these rules in every `claude-*` workflow unless the workflow reference add
   3. After bootstrap starts, look again only under that same project directory.
   4. Prefer a newly appeared top-level session `.jsonl` file that was absent from the pre-bootstrap snapshot; its basename without `.jsonl` is the new `session_uuid`.
   5. If multiple new files appeared, choose the freshest by `mtime`.
-  6. If no new file appeared, use the freshest top-level session file whose `mtime` advanced after bootstrap and whose latest effective name still matches the current Codex thread name.
+  6. If no new file appeared, use the freshest top-level session file whose `mtime` advanced after bootstrap and whose current effective title (latest `custom-title`, else latest `agent-name`) still matches the current Codex thread name.
   7. Never identify a newly created Claude session by broad historical grep across old session files.
 - For a newly created Claude session, persist and commit `CLAUDE_SESSION.json` immediately after the new `session_uuid` is discovered, even if the current Claude turn is still running. Do not wait for turn completion, outbox, commit output, or any other round result before fixing the new session metadata.
 
 ## Request transport
 
+- Every outer Claude prompt must include the shared `Executor mandatory checklist` from `../../common/basics.md` as explicit requirements for the delegated run.
 - `claude -p` without `--resume` is allowed only when the user explicitly approved creating a new Claude session for the current workflow run.
 - Recommended first headless bootstrap command in a trusted local repository:
   `claude -p --dangerously-skip-permissions --permission-mode acceptEdits "<prompt>"`

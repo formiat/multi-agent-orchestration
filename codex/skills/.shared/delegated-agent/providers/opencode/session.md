@@ -26,6 +26,7 @@ Apply these rules in every `opencode-*` workflow unless the workflow reference a
 
 - Before any OpenCode interaction, read the current git branch and check whether `OPENCODE_SESSION.json` already exists.
 - If `OPENCODE_SESSION.json` exists, parse it and reuse `session_id`.
+- If `OPENCODE_SESSION.json` exists, session discovery by title is forbidden; do not scan the session list for alternative candidates in this case.
 - If `OPENCODE_SESSION.json` does not exist, resolve the current Codex session name via the exact lookup `CODEX_THREAD_ID` -> matching `id` in `$HOME/.codex/session_index.jsonl` -> `thread_name`. Do not read Codex logs and do not broad-search `~/.codex` for this lookup.
 - Search `opencode session list --format json` for candidate sessions whose `directory` equals the current repository root and whose `title` equals the current Codex session name. This full-list read is for discovery only.
 - If there is exactly one exact-match OpenCode session candidate, use that `session_id` for continuation.
@@ -54,6 +55,7 @@ Apply these rules in every `opencode-*` workflow unless the workflow reference a
 
 ## Request transport
 
+- Every outer OpenCode prompt or command bootstrap must include the shared `Executor mandatory checklist` from `../../common/basics.md` as explicit requirements for the delegated run.
 - Prefer batch continuation via `opencode run -s <session_id> ...` once the session id is known.
 - Never run more than one `opencode run` concurrently against the same `session_id`. Serialize all work and all retries per OpenCode session.
 - For OpenCode, treat requested artifacts, `./.codex/outbox.md`, dirty worktree state, and local commits as completion/result signals. They are not signs of ongoing work. Do not use UI/transcript visibility as a success criterion.
