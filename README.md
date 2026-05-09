@@ -45,7 +45,7 @@ All Codex workflow skills follow the same high-level pattern.
    If the current branch already belongs to the same task, it is reused. Otherwise a fresh branch is created from `origin/develop` without inheriting an upstream from `origin/develop`.
 
 3. **Session discovery or reuse**
-   Delegated workflows do not blindly create new sessions. Codex first tries to reuse an existing local Claude or OpenCode session tied to the current repository and Codex thread, and only creates a new delegated session with explicit approval.
+   Delegated workflows do not create new Claude or OpenCode sessions. Codex reuses valid session metadata or deterministically discovers exactly one existing session tied to the current repository and Codex thread. If no safe existing session can be selected, the workflow stops and reports the session-binding problem.
 
 4. **Inbox/outbox transport**
    Delegated requests are passed through repository-local workflow files:
@@ -85,7 +85,7 @@ These skills are not a generic task runner. They encode a specific orchestration
   Delegated Claude sessions are reused through `session_uuid` and `claude -p --resume`, and OpenCode sessions are reused through their session metadata. The workflow is designed for continuity, not one-shot prompts.
 
 - **Human-in-the-loop automation**
-  New sessions require explicit approval. Pushes are gated. Quality gates are manual where they need to be, even when the delegated worker can automate the heavy lifting.
+  Session ambiguity stops the workflow instead of silently creating a new chat. Pushes are gated. Quality gates are manual where they need to be, even when the delegated worker can automate the heavy lifting.
 
 - **Cyclic state machine, not a simple DAG**
   The workflow is intentionally iterative. It loops through implement -> review -> revise, with retries and stop criteria such as “quality reached” or “disagreement is irreconcilable.” This is closer to a controlled state machine than a one-pass pipeline.
@@ -95,7 +95,7 @@ What this buys us:
 - roles are separated correctly, so execution and skepticism do not collapse into one agent;
 - workflow state is visible in files, not hidden in ephemeral chat;
 - the system supports review loops instead of single-shot generation;
-- guardrails are explicit: do not push automatically, do not create new sessions without approval, run tests and validation, and keep asking until the work is actually good enough;
+- guardrails are explicit: do not push automatically, do not create new delegated sessions, run tests and validation, and keep asking until the work is actually good enough;
 - persistence through session files makes the process resumable rather than disposable.
 
 ## Provider-Agnostic Orchestration Lifecycle
@@ -108,7 +108,7 @@ The same control algorithm can be applied to Claude, OpenCode, or another delega
    Record `run_id`, workflow type, target output for this round (`PLAN.md`, `INVESTIGATION.md`, review output, or implementation commit), round success criteria, required artifacts, and forbidden side effects (for example `auto-push`).
 
 2. **Bind executor session**
-   Reuse session metadata when valid. If metadata is missing, discover reusable sessions. If discovery is ambiguous (none or multiple matches), stop for human decision unless explicit approval to create a new session is already given.
+   Reuse session metadata when valid. If metadata is missing, discover reusable sessions. If discovery cannot select exactly one deterministic existing session, stop and report the session-binding problem.
 
 3. **Dispatch request**
    Serialize the request into provider transport (`inbox`, batch prompt, or command envelope), then record `dispatch_time`, `attempt_no`, and `request_fingerprint` (used to enforce exact-same-request retries).
@@ -161,8 +161,7 @@ The same control algorithm can be applied to Claude, OpenCode, or another delega
 | `INIT` | run created | inputs valid | initialize run metadata and target artifact | `SESSION_BINDING` |
 | `SESSION_BINDING` | metadata exists | session ref valid | bind session | `DISPATCH_PREP` |
 | `SESSION_BINDING` | metadata missing | exactly one discovered session | bind discovered session | `DISPATCH_PREP` |
-| `SESSION_BINDING` | metadata missing | zero or multiple sessions | request human decision | `WAIT_HUMAN` |
-| `WAIT_HUMAN` | human approved create | `approved=true` | create session, persist metadata | `DISPATCH_PREP` |
+| `SESSION_BINDING` | metadata missing | zero or multiple sessions | report binding problem | `STOPPED_HUMAN_DECISION_REQUIRED` |
 | `WAIT_HUMAN` | human selected session | chosen session valid | bind selected session | `DISPATCH_PREP` |
 | `WAIT_HUMAN` | human aborted | n/a | stop | `STOPPED_HUMAN_DECISION_REQUIRED` |
 | `DISPATCH_PREP` | request ready | n/a | build payload, save fingerprint, increment attempt | `DISPATCHED` |
