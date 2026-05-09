@@ -8,7 +8,7 @@ This workflow adds review-target semantics, OpenCode review-prompt requirements,
 - If `PLAN.md` or `INVESTIGATION.md` exist in the repository root and clearly relate to the same current-branch changes under review, study them as supporting context before the first substantive review pass.
 - Before sending the first new OpenCode message in this workflow run, inspect whether there is already a substantive OpenCode review result for the same target.
 - If that existing review already meets the quality bar, stop and report without contacting OpenCode further.
-- Otherwise keep the findings and use them as the first OpenCode request instead of a fresh bootstrap.
+- Otherwise keep the findings and use them as the first OpenCode request in the current session.
 
 ## OpenCode session matching
 
@@ -16,14 +16,10 @@ This workflow adds review-target semantics, OpenCode review-prompt requirements,
 
 ## Session metadata discipline
 
+- If `OPENCODE_SESSION.json` already exists, reuse only its `session_id` and do not run session discovery by title in this workflow.
+- If discovery is used and yields a deterministic existing-session winner, creating a new OpenCode session is forbidden.
 - If an existing OpenCode session is reused and `OPENCODE_SESSION.json` does not exist yet, create and commit it before sending the first delegated request into that session.
-- If a new OpenCode session is explicitly approved and bootstrapped, discover its real `session_id` immediately after bootstrap via the shared before/after discovery rules, create and commit `OPENCODE_SESSION.json` immediately, and only then continue normal waiting for outbox or other round results. Do not wait for turn completion before fixing the new session metadata.
-
-## New-session bootstrap
-
-- When the user explicitly approves creating a new OpenCode session, bootstrap with a direct English request that tells OpenCode to review the target described by `review_hint`.
-- Do not pass `./.codex/inbox.md` through `-f` or `--file`. Direct prompts in this workflow must instruct OpenCode to read `./.codex/inbox.md` from the current working directory.
-- That bootstrap must tell OpenCode to read `./.codex/inbox.md`, read `./.codex/outbox.md` with the Read tool before resetting it, clear `./.codex/outbox.md` in place via truncation rather than deletion, not to modify project files during review unless the user explicitly asked for fixes, to commit and report the hash only if it still changes project files, never to push automatically or without an explicit user command, and to write its findings in English to `./.codex/outbox.md`.
+- Creating a new OpenCode session/chat is strictly forbidden. If no deterministic existing session can be found by name, stop the workflow and report to the user.
 
 ## Review-specific request requirements
 

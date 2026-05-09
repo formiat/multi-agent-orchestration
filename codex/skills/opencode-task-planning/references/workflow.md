@@ -18,7 +18,7 @@ This workflow adds task-scoped branch preflight, planning-specific OpenCode comm
 - Before sending the first new OpenCode message in this workflow run, inspect the current branch for an already-produced planning result from an earlier OpenCode round.
 - If a non-empty `PLAN.md` relevant to the current task already exists, review it immediately.
 - If it already meets the quality bar, stop and report without contacting OpenCode further.
-- Otherwise keep the findings and use them as the first OpenCode request instead of a fresh bootstrap.
+- Otherwise keep the findings and use them as the first OpenCode request in the current session.
 
 ## OpenCode session matching
 
@@ -26,15 +26,10 @@ This workflow adds task-scoped branch preflight, planning-specific OpenCode comm
 
 ## Session metadata discipline
 
+- If `OPENCODE_SESSION.json` already exists, reuse only its `session_id` and do not run session discovery by title in this workflow.
+- If discovery is used and yields a deterministic existing-session winner, creating a new OpenCode session is forbidden.
 - If an existing OpenCode session is reused and `OPENCODE_SESSION.json` does not exist yet, create and commit it before sending the first delegated request into that session.
-- If a new OpenCode session is explicitly approved and bootstrapped, discover its real `session_id` immediately after bootstrap via the shared before/after discovery rules, create and commit `OPENCODE_SESSION.json` immediately, and only then continue normal waiting for outbox or other round results. Do not wait for turn completion before fixing the new session metadata.
-
-## New-session bootstrap
-
-- When the user explicitly approves creating a new OpenCode session, bootstrap with:
-  `opencode run --title "<codex_session_name>" --command take-task <task_id>`
-- Do not pass `./.codex/inbox.md` through `-f` or `--file`. The command must read `./.codex/inbox.md` from the current working directory on its own.
-- If the existing `PLAN.md` already produced review findings, use a direct English review prompt instead of the fresh command bootstrap.
+- Creating a new OpenCode session/chat is strictly forbidden. If no deterministic existing session can be found by name, stop the workflow and report to the user.
 
 ## Planning-specific request requirements
 

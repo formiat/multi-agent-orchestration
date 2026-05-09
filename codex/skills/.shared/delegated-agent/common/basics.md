@@ -10,6 +10,7 @@ These delegated-agent workflows keep Codex as the orchestrator/reviewer and use 
 - Keep delegated-agent messages lean and non-duplicative. Include only the operative request, explicit user constraints or local context that the delegated agent cannot already derive, and persistent workflow requirements that still matter for the current round.
 - When delegating an autonomous phase, prefer strict completion conditions so less monitoring is needed. Ask the delegated agent to finish the requested work, run the required verification, create a commit when project files changed, report the commit hash and executed verification commands, and then stop.
 - In every delegated-agent interaction, use a consultative peer-to-peer tone. Present findings, risks, contradictions, and counterexamples as observations for the delegated agent to evaluate; ask it to either agree and update the artifact/result or disagree and explain why. Do not use one-way order-giving style.
+- If the first non-empty delegated `./.codex/outbox.md` for a run is clearly unrelated to the active request, references a different task/scope, uses the wrong repository/context, or otherwise proves the executor is not following the current inbox, classify that executor session/chat as poisoned for this workflow. Stop the workflow immediately and report the poisoned-session state to the user. Do not continue the normal review loop, do not send corrective prompts, and do not retry in that same session.
 - After every delegated-agent interaction, including the initial request, each review round, and each progress check, sleep at least `3` minutes before the next polling action, stdout inspection, session-history read, `git status`, `git log`, or other progress check.
 - Terminal-state exception: when the executor has already exited without the required round result, or when a service-cap marker is already confirmed, skip the normal polling cooldown and branch immediately into diagnosis/stop-or-retry handling.
 - Cheap progress signals may be checked at most once every `3` minutes.
@@ -33,6 +34,7 @@ These delegated-agent workflows keep Codex as the orchestrator/reviewer and use 
 - Explicitly require reporting commit hash and executed verification commands in outbox.
 - For Rust code changes, explicitly require `cargo fmt` and `make clippy` before commit (or equivalent repo-approved formatting/lint commands).
 - When tests are added or changed, explicitly require running new/changed tests.
+- Explicitly state that placeholder tests are not valid test implementation. Empty tests, tests without assertions or behavioral checks, TODO-tests, tests whose body only says "verified by code review", and tests that only document future work do not count as satisfying any requested test category.
 - When module code is changed, explicitly require running that module's test suite (or the smallest valid crate-level scope that covers the module).
 - Explicitly require surfacing any incomplete work, skipped checks, or failures in outbox (never silently omit them).
 - Explicitly require no destructive git operations (`reset --hard`, `checkout --`, etc.) unless the user asked for them directly.
@@ -52,8 +54,14 @@ These delegated-agent workflows keep Codex as the orchestrator/reviewer and use 
 - Do not trust the delegated agent's work or self-report by default. Independently verify as much as practical against the repository, local materials, git history, tests, and current branch state, then feed the findings back into review rounds.
 - In review cycles, avoid monitoring while the delegated agent is editing. Treat dirty project-file changes, local commits, requested artifacts, and outbox writes as completion/result signals, not as signs of ongoing work.
 - In code- or artifact-producing workflows, if dirty project-file changes appear, wait exactly `3` minutes before the next check for a local commit; review uncommitted changes only if the commit is still missing after that check.
+- After killing a likely-hung delegated executor, immediately classify any remaining dirty project-file changes before retrying. Treat them explicitly as either reviewable partial output or as failed-attempt residue. Report that classification to the user when it affects continuation. Do not silently retry on top of ambiguous dirty changes.
 - After a local commit appears in a code- or artifact-producing workflow, wait exactly `3` minutes before the next check for `./.codex/outbox.md`; review the commit without outbox only if outbox is still missing after that check. Start review earlier when outbox is already present.
 - In review-only workflows whose main deliverable is outbox, wait for outbox first. If project-file changes appear anyway, apply the same `3`-minute commit grace and then the same `3`-minute outbox-after-commit grace before reviewing.
 - Prefer one consolidated review pass over many tiny interruptions.
 - Stop the workflow only when one of these conditions holds: quality reaches at least `8/10`; the disagreement is irreconcilable; five consecutive non-service-cap failures/restarts have occurred; or a service-cap condition blocks continuation. Do not stop for other reasons.
 - If the delegated agent cannot complete the assigned work for any reason, surface that state to the user instead of silently converting the workflow into solo Codex work.
+
+## Local verification output hygiene
+
+- When Codex runs verification commands after delegated work, assume test/build/lint stdout can be noisy. Prefer redirecting stdout/stderr to a timestamped file under `/tmp/` and then read only the concise result, failing sections, and lines matching compact markers such as `test result`, `FAILED`, `error:`, `panicked`, `failures:`, or the relevant tool's summary.
+- Do not load full test, build, clippy, trace, or application logs into model context by default. If detailed logs are needed, extract the smallest slice that explains the failure.

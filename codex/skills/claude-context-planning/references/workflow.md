@@ -1,6 +1,6 @@
 # Workflow
 
-This workflow adds context-based planning bootstrap, stricter Claude session matching, planning-specific prompt requirements, and the final reporting contract on top of the shared delegated-agent and Claude-provider references.
+This workflow adds context-based planning request rules, stricter Claude session matching, planning-specific prompt requirements, and the final reporting contract on top of the shared delegated-agent and Claude-provider references.
 
 ## Planning inputs and existing-result reuse
 
@@ -9,30 +9,27 @@ This workflow adds context-based planning bootstrap, stricter Claude session mat
 - Before sending the first new Claude message in this workflow run, inspect the current branch for an already-produced planning result from an earlier Claude round.
 - If a non-empty `PLAN.md` relevant to the current context already exists, review it immediately.
 - If it already meets the quality bar, stop and report without contacting Claude further.
-- Otherwise keep the findings and use them as the first Claude inbox message instead of a fresh `/plan-from-context` bootstrap or generic planning request.
+- Otherwise keep the findings and use them as the first Claude inbox message for the current session.
 
 ## Claude session matching override
 
 - When searching the current project's Claude logs, do not grep raw text for historical mentions of the current Codex session name and do not load whole session logs into model context.
 - Use local shell tooling to extract only a compact per-file summary: session UUID, latest `type == "custom-title"` value from JSON key `customTitle`, latest `type == "agent-name"` value from JSON key `agentName`, and optional recency metadata.
-- In each file, track the latest `custom-title` value and the latest `agent-name` value from those exact JSON keys, then treat only those latest values as the session's current effective names.
-- Match the current Codex session name only by exact equality against those latest effective names.
+- In each file, compute one current effective title: prefer the latest `custom-title`; use the latest `agent-name` only when no `custom-title` exists in that session file.
+- Match the current Codex session name only by exact equality against that single effective title.
 - Do not special-case or filter out custom names such as `--trash-*`; if that is the current exact name, it is a valid match.
 - If multiple exact matches exist, select the freshest exact match by file `mtime` as the one current session to reuse.
+- If this deterministic winner exists, creating a new session is forbidden.
 - Use file `mtime` or other recency signals only as a tie-breaker after exact current-name matching, never before it.
 - Do not treat a broken extraction script or missing `customTitle`/`agentName` parsing as proof that no matching session exists. Fix discovery first; only after correct discovery may zero matches be treated as real zero matches.
 - This override replaces the default session-discovery matching from `../../.shared/delegated-agent/providers/claude/session.md`.
 
 ## Session metadata discipline
 
+- If `CLAUDE_SESSION.json` already exists, reuse only its `session_uuid` and do not run session discovery by name in this workflow.
+- If discovery is used and yields a deterministic existing-session winner, creating a new Claude session is forbidden.
 - If an existing Claude session is reused and `CLAUDE_SESSION.json` does not exist yet, create and commit it before sending the first delegated request into that session.
-- If a new Claude session is explicitly approved and bootstrapped, discover its real `session_uuid` immediately after bootstrap via the shared before/after discovery rules, create and commit `CLAUDE_SESSION.json` immediately, and only then continue normal waiting for outbox or other round results. Do not wait for turn completion before fixing the new session metadata.
-
-## New-session bootstrap
-
-- When the user explicitly approves creating a new Claude session, bootstrap with an English request that tells Claude to `Run /plan-from-context.` and includes the current prompt/context below it.
-- That bootstrap must tell Claude not to commit inbox/outbox, to commit planning results, never to push automatically or without an explicit user command, to write minimal status in English to `./.codex/outbox.md`, to keep resulting human-facing workflow artifacts/output in English by default, and to keep any code comments added or edited in project files in English only.
-- If the existing `PLAN.md` already produced review findings, use that first consultative review message instead of the fresh bootstrap request.
+- Creating a new Claude session/chat is strictly forbidden. If no deterministic existing session can be found by name, stop the workflow and report to the user.
 
 ## Planning-specific request requirements
 

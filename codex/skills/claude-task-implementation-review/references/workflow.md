@@ -20,12 +20,10 @@ This workflow adds implementation-scope selection, implementation/test-specific 
 
 ## Session metadata discipline
 
+- If `CLAUDE_SESSION.json` already exists, reuse only its `session_uuid` and do not run session discovery by name in this workflow.
+- If discovery is used and yields a deterministic existing-session winner, creating a new Claude session is forbidden.
 - If an existing Claude session is reused and `CLAUDE_SESSION.json` does not exist yet, create and commit it before sending the first delegated request into that session.
-- If a new Claude session is explicitly approved and bootstrapped, discover its real `session_uuid` immediately after bootstrap via the shared before/after discovery rules, create and commit `CLAUDE_SESSION.json` immediately, and only then continue normal waiting for outbox or other round results. Do not wait for turn completion before fixing the new session metadata.
-
-## New-session bootstrap
-
-- When the user explicitly approves creating a new Claude session, bootstrap with either the first actual implementation request written in English or, when existing implementation findings already exist, that first consultative review message written in English instead.
+- Creating a new Claude session/chat is strictly forbidden. If no deterministic existing session can be found by name, stop the workflow and report to the user.
 
 ## Implementation-specific request requirements
 

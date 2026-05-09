@@ -10,7 +10,7 @@ This workflow adds review-target semantics, review-specific prompt requirements,
 - Start with a cheap check such as a non-empty `./.codex/outbox.md` from the current run.
 - If needed, inspect the current Claude session state minimally to determine whether Claude already produced review findings for the current `review_hint`.
 - If that existing review already meets the quality bar, stop and report without contacting Claude further.
-- Otherwise keep the findings and use them as the first Claude inbox message instead of a fresh bootstrap request.
+- Otherwise keep the findings and use them as the first Claude inbox message in the current session.
 
 ## Claude session matching
 
@@ -18,14 +18,10 @@ This workflow adds review-target semantics, review-specific prompt requirements,
 
 ## Session metadata discipline
 
+- If `CLAUDE_SESSION.json` already exists, reuse only its `session_uuid` and do not run session discovery by name in this workflow.
+- If discovery is used and yields a deterministic existing-session winner, creating a new Claude session is forbidden.
 - If an existing Claude session is reused and `CLAUDE_SESSION.json` does not exist yet, create and commit it before sending the first delegated request into that session.
-- If a new Claude session is explicitly approved and bootstrapped, discover its real `session_uuid` immediately after bootstrap via the shared before/after discovery rules, create and commit `CLAUDE_SESSION.json` immediately, and only then continue normal waiting for outbox or other round results. Do not wait for turn completion before fixing the new session metadata.
-
-## New-session bootstrap
-
-- When the user explicitly approves creating a new Claude session, bootstrap with a English request that tells Claude to review the target described by `review_hint`.
-- That bootstrap must tell Claude not to commit inbox/outbox, not to modify project files during review unless the user explicitly asked for fixes, to commit and report the hash only if it still changes project files, never to push automatically or without an explicit user command, to write its findings in English to `./.codex/outbox.md`, to keep resulting human-facing workflow artifacts/output in English by default, and to keep any code comments added or edited in project files in English only.
-- If an existing review already produced follow-up findings, use that consultative feedback message instead of the fresh bootstrap request.
+- Creating a new Claude session/chat is strictly forbidden. If no deterministic existing session can be found by name, stop the workflow and report to the user.
 
 ## Review-specific request requirements
 
